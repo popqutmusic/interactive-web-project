@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three.js Cube with Timer</title>
+  <style>
+    body { margin: 0; }
+    canvas { display: block; }
+
+    /* Styling the Play/Pause button */
+    #playPauseButton {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #playPauseButton.paused {
+      background-color: #f44336;
+    }
+
+    /* Styling the Timer */
+    #timer {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 20px;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Styling the Progress Bar */
+    #progressBarContainer {
+      position: absolute;
+      bottom: 20px;
+      left: 120px;
+      width: 300px;
+      height: 20px;
+      background-color: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #progressBar {
+      height: 100%;
+      width: 0%;
+      background-color: #4CAF50;
+      border-radius: 10px;
+      transition: width 1s linear;
+    }
+  </style>
+</head>
+<body>
+  <button id="playPauseButton">Play</button>
+  <div id="timer">30</div>
+  <div id="progressBarContainer">
+    <div id="progressBar"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <script>
+    // 1. Scene setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+    // 2. WebGL Renderer
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // 3. Cube geometry and material
+    const geometry = new THREE.BoxGeometry();
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const cube = new THREE.Mesh(geometry, material);
+    scene.add(cube);
+
+    // 4. Camera position
+    camera.position.z = 5;
+
+    // 5. Mouse movement tracking
+    let mouseX = 0;
+    let mouseY = 0;
+    let rotationEnabled = false; // Flag to enable mouse interaction
+    let autoRotate = false; // Flag to control auto-rotation
+    let rotationSpeed = 0.005; // Rotation speed for the cube
+
+    // Timer variables
+    let timeRemaining = 30; // Timer starts at 30 seconds
+    let timerInterval;
+    let timerRunning = false;
+
+    // Event listener for mouse movement
+    document.addEventListener('mousemove', (event) => {
+      if (rotationEnabled) {
+        // Normalize mouse position
+        mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+        mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+      }
+    });
+
+    // Event listener for the play/pause button
+    const playPauseButton = document.getElementById('playPauseButton');
+    const timerElement = document.getElementById('timer');
+    const progressBar = document.getElementById('progressBar');
+    playPauseButton.addEventListener('click', () => {
+      if (timerRunning) {
+        // Pause everything: stop the timer, stop cube animation, but keep mouse control enabled
+        clearInterval(timerInterval);
+        playPauseButton.textContent = 'Play';
+        playPauseButton.classList.remove('paused');
+        rotationEnabled = true; // Keep mouse interaction enabled
+        autoRotate = false; // Stop animation
+        rotationSpeed = 0.005; // Slow down rotation when paused
+        timerRunning = false;
+        // Do not reset the timer or progress bar until "Play" is clicked again
+      } else {
+        // Reset the timer, progress bar, and start the cube animation
+        timeRemaining = 30;
+        progressBar.style.width = '0%'; // Reset progress bar
+        timerElement.textContent = timeRemaining;
+
+        // Start the timer, auto-rotate the cube, and enable mouse interaction
+        playPauseButton.textContent = 'Pause';
+        playPauseButton.classList.add('paused');
+        rotationEnabled = true; // Enable mouse control
+        autoRotate = true; // Enable auto-rotation
+        rotationSpeed = 0.01; // Speed up rotation when "Play" is clicked
+        timerRunning = true;
+
+        // Start countdown timer
+        timerInterval = setInterval(() => {
+          timeRemaining--;
+          timerElement.textContent = timeRemaining;
+
+          // Update the progress bar width
+          const progress = ((30 - timeRemaining) / 30) * 100; // Calculate percentage
+          progressBar.style.width = `${progress}%`;
+
+          if (timeRemaining <= 0) {
+            clearInterval(timerInterval); // Stop the timer
+            autoRotate = false; // Stop animation when the timer finishes
+          }
+        }, 1000);
+      }
+    });
+
+    // 6. Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Auto-rotate the cube if enabled
+      if (autoRotate) {
+        cube.rotation.x += rotationSpeed; // Adjusted rotation speed
+        cube.rotation.y += rotationSpeed; // Adjusted rotation speed
+      }
+
+      // Update cube rotation based on mouse position if mouse control is enabled
+      if (rotationEnabled) {
+        cube.rotation.x += mouseY * Math.PI * 0.005; // Slower rotation with mouse
+        cube.rotation.y += mouseX * Math.PI * 0.005; // Slower rotation with mouse
+      }
+
+      // Render the scene
+      renderer.render(scene, camera);
+    }
+
+    // Start the animation loop
+    animate();
+  </script>
+</body>
+</html>
